@@ -45,9 +45,18 @@ public class Main {
     public static void runCommand(String command){
         switch (command){
             case ("connect"): connectToPeers();
+                break;
             case ("leave"): disconnectFromPeers();
+                break;
             case ("exit"): exitNetwork();
+                break;
+            default: runFileQuery();
+                break;
         }
+    }
+
+    public static void runFileQuery(){
+
     }
 
     public static void connectToPeers(){
@@ -61,10 +70,17 @@ public class Main {
     }
 
     public static void disconnectFromPeers(){
-
+        for(Socket socket:peerConnections){
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void exitNetwork(){
+        disconnectFromPeers();
         running = false;
         System.out.println("Exiting...");
     }
