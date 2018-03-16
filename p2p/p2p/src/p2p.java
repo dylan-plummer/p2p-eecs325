@@ -3,24 +3,24 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Main {
-    private static final int START_PORT = 50600;
-    private static final int END_PORT = 50619;
-    private static boolean running = true;
+public class p2p {
+    public static final int START_PORT = 50600;
+    public static final int END_PORT = 50619;
 
+    private static Thread serverThread;
+    private static ServerRunnable serverRunnable;
+    private static boolean running = true;
     private static String fileName;
     public static ArrayList<String> addressList;
     public static ArrayList<Socket> peerConnections = new ArrayList<>();
 
     public static void main(String[] args){
+        System.out.println("Starting up peer...");
         addressList = fillAddresses("config_neighbors.txt");
         System.out.println(addressList.toString());
-        Thread getFile = new Thread(fileName);
-            for(Socket socket:peerConnections){
-                if(queryPeer(fileName,socket)){
-
-                }
-            }
+        serverRunnable = new ServerRunnable();
+        serverThread = (new Thread(serverRunnable));
+        serverThread.start();
         while(running){
             runCommand(getCommand()); //run user input
         }
@@ -44,7 +44,7 @@ public class Main {
     public static String getCommand() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Waiting for command: ");
-        return scanner.next().toLowerCase();
+        return scanner.nextLine().toLowerCase();
     }
 
     public static void runCommand(String command){
@@ -55,20 +55,35 @@ public class Main {
                 break;
             case ("exit"): exitNetwork();
                 break;
-            default: runFileQuery();
+            default: runFileQuery(command);
                 break;
         }
     }
 
-    public static void runFileQuery(){
-
+    public static void runFileQuery(String command){
+        System.out.println(command);
+        if (command.substring(0,3).equals("get")){
+            fileName = command.substring(4);
+            for(Socket socket:peerConnections){
+                if (queryPeer(fileName,socket)){
+                    System.out.println("");
+                    //TODO get file
+                }
+            }
+        }
+        else{
+            System.out.println("Command not recognized");
+        }
     }
 
     public static void connectToPeers(){
         for (String address:addressList) {
             try {
+                System.out.println("Connecting to: " + address);
                 peerConnections.add(new Socket(address,START_PORT));
+                System.out.println("Connected to: " + address);
             } catch (IOException e) {
+                System.out.println("Unable to connect");
                 e.printStackTrace();
             }
         }
@@ -87,19 +102,24 @@ public class Main {
     public static void exitNetwork(){
         disconnectFromPeers();
         running = false;
+        serverRunnable.closeConnection();
         System.out.println("Exiting...");
     }
 
     public static boolean queryPeer(String fileName, Socket socket){
         int qId = (int)(Math.random() * 10000);
-        DataOutputStream  outToClient;
+        PrintWriter outToClient;
         try {
-            outToClient = new DataOutputStream(socket.getOutputStream());
+            outToClient = new PrintWriter(socket.getOutputStream(),true);
             String queryMessage = "Q:" + qId + ";" + fileName;
-            outToClient.writeBytes(queryMessage);
+            System.out.println("Sending query for " + fileName + " to " + socket.getInetAddress().getHostAddress());
+            outToClient.println(queryMessage);
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream())); //peer will query its neighbors if it does not have the file
+            String clientResponse = inFromClient.readLine();
+            System.out.println(clientResponse);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return false;
     }
 }
