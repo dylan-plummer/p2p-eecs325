@@ -6,6 +6,7 @@ import java.util.Scanner;
 public class p2p {
     public static final int START_PORT = 50600;
     public static final int END_PORT = 50619;
+    public static int localPort;
 
     private static Thread serverThread;
     private static ServerRunnable serverRunnable;
@@ -19,7 +20,8 @@ public class p2p {
         System.out.println("Starting up peer...");
         //addressList = fillAddresses("config_neighbors.txt");
         //System.out.println(addressList.toString());
-        serverRunnable = new ServerRunnable(START_PORT);
+        localPort = getLocalPort("config_local_port.txt");
+        serverRunnable = new ServerRunnable(localPort);
         serverThread = (new Thread(serverRunnable));
         serverThread.start();
         while(running){
@@ -46,9 +48,18 @@ public class p2p {
         return addressList;
     }
 
+    public static int getLocalPort(String file){
+        File addressFile = new File (file);
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(addressFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return Integer.parseInt(scanner.nextLine());
+    }
+
     public static Socket getSocketFromConfig(String line) throws IOException {
-        System.out.println(line.substring(0,line.indexOf(':')));
-        System.out.println(Integer.parseInt(line.substring(line.indexOf(':')+1)));
         return new Socket(line.substring(0,line.indexOf(':')),Integer.parseInt(line.substring(line.indexOf(':')+1)));
     }
 
@@ -78,7 +89,7 @@ public class p2p {
             for(Socket socket:peerConnections){
                 String queryResponse = queryPeer(fileName,socket);
                 if (queryResponse.equals("File not found")){
-                    //file not found
+                    System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file "+ fileName);
                 }
                 else{
                     downloadFile(fileName,getAddressFromResponse(queryResponse.substring(2)),END_PORT);
@@ -103,16 +114,11 @@ public class p2p {
 
     public static void connectToPeers(){
         peerConnections = fillAddresses("config_neighbors.txt");
+        serverRunnable.setNeighbors(peerConnections);
     }
 
     public static void disconnectFromPeers(){
-        for(Socket socket:peerConnections){
-            try {
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        serverRunnable.closeConnection();
     }
 
     public static void exitNetwork(){

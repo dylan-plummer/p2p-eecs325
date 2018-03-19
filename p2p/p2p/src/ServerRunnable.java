@@ -1,21 +1,27 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 /**
  * Created by jumpr on 3/15/2018.
  */
 public class ServerRunnable implements Runnable {
     private static boolean serverRunning = true;
-    private static boolean initConnection = true;
     private static ServerSocket serverSocket;
-    private Socket connectionSocket;
+    private static Socket connectionSocket;
     private BufferedReader inFromClient;
     private PrintWriter outToClient;
     private int port;
+    private ArrayList<Socket> neighbors;
 
     public ServerRunnable(int port){
         this.port = port;
+        this.neighbors = new ArrayList<>();
+    }
+    public ServerRunnable(int port, ArrayList<Socket> neighbors){
+        this.port = port;
+        this.neighbors = neighbors;
     }
     @Override
     public void run() {
@@ -39,6 +45,18 @@ public class ServerRunnable implements Runnable {
                             connectionSocket.getLocalPort();
                     outToClient.println(response);
                 }
+                else{
+                    for(Socket socket:neighbors){
+                        String queryResponse = p2p.queryPeer(fileName,socket);
+                        if (queryResponse.equals("File not found")){
+                            System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file "+ fileName);
+                        }
+                        else{
+                            outToClient.println(queryResponse);
+                        }
+
+                    }
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -61,9 +79,26 @@ public class ServerRunnable implements Runnable {
     public static void closeConnection(){
         try {
             serverRunning = false;
+            connectionSocket.close();
             serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public ArrayList<Socket> getNeighbors() {
+        return neighbors;
+    }
+
+    public void setNeighbors(ArrayList<Socket> neighbors) {
+        this.neighbors = neighbors;
     }
 }
