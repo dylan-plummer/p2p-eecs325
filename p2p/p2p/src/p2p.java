@@ -12,13 +12,14 @@ public class p2p {
     private static boolean running = true;
     private static String fileName;
     public static ArrayList<String> addressList;
+    public static ArrayList<Integer> portList;
     public static ArrayList<Socket> peerConnections = new ArrayList<>();
 
     public static void main(String[] args){
         System.out.println("Starting up peer...");
-        addressList = fillAddresses("config_neighbors.txt");
-        System.out.println(addressList.toString());
-        serverRunnable = new ServerRunnable();
+        //addressList = fillAddresses("config_neighbors.txt");
+        //System.out.println(addressList.toString());
+        serverRunnable = new ServerRunnable(START_PORT);
         serverThread = (new Thread(serverRunnable));
         serverThread.start();
         while(running){
@@ -26,8 +27,8 @@ public class p2p {
         }
     }
 
-    public static ArrayList<String> fillAddresses(String file){
-        ArrayList<String> addressList = new ArrayList<String>();
+    public static ArrayList<Socket> fillAddresses(String file){
+        ArrayList<Socket> addressList = new ArrayList<Socket>();
         File addressFile = new File (file);
         Scanner scanner = null;
         try {
@@ -36,9 +37,19 @@ public class p2p {
             e.printStackTrace();
         }
         while(scanner.hasNext()){
-            addressList.add(scanner.nextLine());
+            try {
+                addressList.add(getSocketFromConfig(scanner.nextLine()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return addressList;
+    }
+
+    public static Socket getSocketFromConfig(String line) throws IOException {
+        System.out.println(line.substring(0,line.indexOf(':')));
+        System.out.println(Integer.parseInt(line.substring(line.indexOf(':')+1)));
+        return new Socket(line.substring(0,line.indexOf(':')),Integer.parseInt(line.substring(line.indexOf(':')+1)));
     }
 
     public static String getCommand() {
@@ -65,9 +76,12 @@ public class p2p {
         if (command.substring(0,3).equals("get")){
             fileName = command.substring(4);
             for(Socket socket:peerConnections){
-                if (queryPeer(fileName,socket)){
-                    System.out.println("");
-                    //TODO get file
+                String queryResponse = queryPeer(fileName,socket);
+                if (queryResponse.equals("File not found")){
+                    //file not found
+                }
+                else{
+                    downloadFile(fileName,getAddressFromResponse(queryResponse.substring(2)),END_PORT);
                 }
             }
         }
@@ -76,17 +90,19 @@ public class p2p {
         }
     }
 
+    public static String getAddressFromResponse(String response){
+        return response.substring(response.indexOf(';')+1,response.indexOf(':'));
+    }
+    public static int getPortFromResponse(String response){
+        return Integer.parseInt(response.substring(response.indexOf(':')+1));
+    }
+
+    public static void downloadFile(String fileName, String address, int port){
+        new Thread(new DownloadRunnable(fileName, address,port)).start();
+    }
+
     public static void connectToPeers(){
-        for (String address:addressList) {
-            try {
-                System.out.println("Connecting to: " + address);
-                peerConnections.add(new Socket(address,START_PORT));
-                System.out.println("Connected to: " + address);
-            } catch (IOException e) {
-                System.out.println("Unable to connect");
-                e.printStackTrace();
-            }
-        }
+        peerConnections = fillAddresses("config_neighbors.txt");
     }
 
     public static void disconnectFromPeers(){
@@ -106,7 +122,7 @@ public class p2p {
         System.out.println("Exiting...");
     }
 
-    public static boolean queryPeer(String fileName, Socket socket){
+    public static String queryPeer(String fileName, Socket socket){
         int qId = (int)(Math.random() * 10000);
         PrintWriter outToClient;
         try {
@@ -117,9 +133,10 @@ public class p2p {
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream())); //peer will query its neighbors if it does not have the file
             String clientResponse = inFromClient.readLine();
             System.out.println(clientResponse);
+            return clientResponse;
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return false;
+        return "File not found";
     }
 }
