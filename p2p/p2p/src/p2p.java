@@ -15,6 +15,7 @@ public class p2p {
     public static ArrayList<String> addressList;
     public static ArrayList<Integer> portList;
     public static ArrayList<Socket> peerConnections = new ArrayList<>();
+    public static ArrayList<ServerRunnable> serverConnections = new ArrayList<>();
 
     public static void main(String[] args){
         System.out.println("Starting up peer...");
@@ -25,6 +26,7 @@ public class p2p {
         serverThread = (new Thread(serverRunnable));
         serverThread.start();
         while(running){
+            System.out.println("Waiting for command: ");
             runCommand(getCommand()); //run user input
         }
     }
@@ -40,7 +42,10 @@ public class p2p {
         }
         while(scanner.hasNext()){
             try {
-                addressList.add(getSocketFromConfig(scanner.nextLine()));
+                String address = scanner.nextLine();
+                System.out.println("Connecting to "+ address);
+                addressList.add(getSocketFromConfig(address));
+                System.out.println("Connection to "+ address +" successful");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -65,7 +70,6 @@ public class p2p {
 
     public static String getCommand() {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Waiting for command: ");
         return scanner.nextLine().toLowerCase();
     }
 
@@ -83,7 +87,6 @@ public class p2p {
     }
 
     public static void runFileQuery(String command){
-        System.out.println(command);
         if (command.substring(0,3).equals("get")){
             fileName = command.substring(4);
             for(Socket socket:peerConnections){
@@ -115,6 +118,7 @@ public class p2p {
     public static void connectToPeers(){
         peerConnections = fillAddresses("config_neighbors.txt");
         serverRunnable.setNeighbors(peerConnections);
+        serverConnections.add(serverRunnable);
     }
 
     public static void disconnectFromPeers(){
@@ -134,7 +138,7 @@ public class p2p {
         try {
             outToClient = new PrintWriter(socket.getOutputStream(),true);
             String queryMessage = "Q:" + qId + ";" + fileName;
-            System.out.println("Sending query for " + fileName + " to " + socket.getInetAddress().getHostAddress());
+            System.out.println("Sending query for " + fileName + " to " + socket.getInetAddress().toString());
             outToClient.println(queryMessage);
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream())); //peer will query its neighbors if it does not have the file
             String clientResponse = inFromClient.readLine();

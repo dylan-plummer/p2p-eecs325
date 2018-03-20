@@ -35,8 +35,8 @@ public class TransferRunnable implements Runnable {
                 os.write(mybytearray, 0, mybytearray.length);
                 os.flush();
                 sock.close();
-                System.out.println("File transferred");
             }
+            System.out.println("File transferred");
         } catch (IOException e) {
             e.printStackTrace();
         }

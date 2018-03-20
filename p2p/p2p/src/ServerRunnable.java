@@ -8,8 +8,8 @@ import java.util.ArrayList;
  */
 public class ServerRunnable implements Runnable {
     private static boolean serverRunning = true;
-    private static ServerSocket serverSocket;
-    private static Socket connectionSocket;
+    private ServerSocket serverSocket;
+    private Socket connectionSocket;
     private BufferedReader inFromClient;
     private PrintWriter outToClient;
     private int port;
@@ -27,11 +27,11 @@ public class ServerRunnable implements Runnable {
     public void run() {
         try {
             serverSocket = new ServerSocket(port);
-            connectionSocket = serverSocket.accept();
-            System.out.println("Connection from: " + connectionSocket.getInetAddress().getHostAddress());
-            inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-            outToClient = new PrintWriter(connectionSocket.getOutputStream(),true);
             while(serverRunning){
+                Socket connectionSocket = serverSocket.accept();
+                System.out.println("Connection from: " + connectionSocket.getInetAddress().toString());
+                BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(),true);
                 String clientQuery = inFromClient.readLine();
                 String fileName = getFileName(clientQuery);
                 System.out.println(clientQuery);
@@ -62,6 +62,7 @@ public class ServerRunnable implements Runnable {
             e.printStackTrace();
         } finally {
             try {
+                serverSocket.close();
                 connectionSocket.close();
                 inFromClient.close();
                 outToClient.close();
@@ -77,13 +78,9 @@ public class ServerRunnable implements Runnable {
         return query.substring(query.indexOf(';')+1);
     }
     public static void closeConnection(){
-        try {
-            serverRunning = false;
-            connectionSocket.close();
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        serverRunning = false;
+        //connectionSocket.close();
+        //serverSocket.close();
     }
 
     public int getPort() {
