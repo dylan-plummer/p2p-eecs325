@@ -4,6 +4,9 @@ import java.util.Scanner;
 
 public class p2p {
     public static final int TRANSFER_PORT = 50619;
+    public static final int HEARTBEAT_PORT = 50618;
+    public static final int TIMEOUT = 30000;
+    public static final int HEARTBEAT_DELAY = 20;
     public static int localPort;
     public static String localAddress;
 
@@ -15,8 +18,8 @@ public class p2p {
 
     public static void main(String[] args){
         System.out.println("Starting up peer...");
-        localPort = getLocalPort("config_local.txt");
-        localAddress = getLocalAddress("config_local.txt");
+        localPort = getLocalPort("_config_local.txt");
+        localAddress = getLocalAddress("_config_local.txt");
         if(localPort==-1 || localAddress.equals("")){
             System.out.println("Invalid local config file");
         }
@@ -88,7 +91,6 @@ public class p2p {
             fileName = command.substring(4);
             String response = peer.queryNeighbors(fileName);
             if(response.charAt(0)=='R'){
-                System.out.println("Downloading from p2p");
                 peer.downloadFile(fileName,peer.getAddressFromResponse(response), TRANSFER_PORT);
             }
         }

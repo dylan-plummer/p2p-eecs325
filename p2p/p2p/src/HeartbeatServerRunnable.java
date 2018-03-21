@@ -1,21 +1,18 @@
-import java.io.*;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 
 /**
- * Created by jumpr on 3/15/2018.
+ * Created by jumpr_000 on 3/20/2018.
  */
-public class ServerRunnable implements Runnable {
+public class HeartbeatServerRunnable implements Runnable {
     private static boolean serverRunning = true;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
     private Peer peer;
     private int port;
-    private ArrayList<Socket> activeConnections = new ArrayList<>();
 
-
-    public ServerRunnable(Peer peer, int port) {
+    public HeartbeatServerRunnable(Peer peer, int port) {
         this.peer = peer;
         this.port = port;
     }
@@ -26,10 +23,7 @@ public class ServerRunnable implements Runnable {
             serverSocket = new ServerSocket(this.getPort());
             while(serverRunning){
                 connectionSocket = serverSocket.accept();
-                activeConnections.add(connectionSocket);
-                System.out.println("Connection from: " + connectionSocket.getInetAddress().toString());
-                ClientRunnable clientRunnable = new ClientRunnable(peer,connectionSocket);
-                new Thread(clientRunnable).start();
+                System.out.println("Heartbeat from: " + connectionSocket.getInetAddress().toString());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -43,8 +37,13 @@ public class ServerRunnable implements Runnable {
             }
         }
     }
-    public static void closeConnection(){
-        serverRunning = false;
+
+    public Peer getPeer() {
+        return peer;
+    }
+
+    public void setPeer(Peer peer) {
+        this.peer = peer;
     }
 
     public int getPort() {
@@ -53,13 +52,5 @@ public class ServerRunnable implements Runnable {
 
     public void setPort(int port) {
         this.port = port;
-    }
-
-    public Peer getPeer() {
-        return peer;
-    }
-
-    public void setPeer(Peer peer) {
-        this.peer = peer;
     }
 }

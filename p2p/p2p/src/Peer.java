@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -9,7 +10,6 @@ import java.util.Scanner;
 public class Peer {
     private String address;
     private int port;
-    private Socket connectionSocket;
     private ArrayList<Peer> neighbors;
     private ArrayList<Socket> connections;
     private boolean neighborsNeeded;
@@ -20,7 +20,7 @@ public class Peer {
         this.port = port;
         this.neighborsNeeded = neighborsNeeded;
         if(neighborsNeeded) {
-            neighbors = fillNeighbors("config_neighbors.txt");
+            neighbors = fillNeighbors("_config_neighbors.txt");
         }
     }
 
@@ -50,7 +50,15 @@ public class Peer {
     public ArrayList<Socket> makeConnections() throws IOException {
         connections = new ArrayList<>();
         for(Peer neighbor:neighbors){
-            connections.add(new Socket(neighbor.getAddress(),neighbor.getPort()));
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(neighbor.getAddress(), neighbor.getPort()), p2p.TIMEOUT);
+            connections.add(socket);
+        }
+        for(Socket socket:connections){
+            HeartbeatServerRunnable heartbeatServerRunnable = new HeartbeatServerRunnable(this,p2p.HEARTBEAT_PORT);
+            new Thread(heartbeatServerRunnable).start();
+            HeartbeatRunnable heartbeatRunnable = new HeartbeatRunnable(socket.getInetAddress().getHostAddress(),p2p.HEARTBEAT_PORT);
+            new Thread(heartbeatRunnable).start();
         }
         return connections;
     }
@@ -126,13 +134,6 @@ public class Peer {
         this.port = port;
     }
 
-    public Socket getConnectionSocket() {
-        return connectionSocket;
-    }
-
-    public void setConnectionSocket(Socket connectionSocket) {
-        this.connectionSocket = connectionSocket;
-    }
 
     public ArrayList<Peer> getNeighbors() {
         return neighbors;

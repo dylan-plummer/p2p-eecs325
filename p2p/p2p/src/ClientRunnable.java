@@ -9,9 +9,9 @@ public class ClientRunnable implements Runnable {
     private Peer peer;
     private boolean connected = true;
 
-    public ClientRunnable(Peer peer){
+    public ClientRunnable(Peer peer, Socket connectionSocket){
         this.peer = peer;
-        this.connectionSocket = peer.getConnectionSocket();
+        this.connectionSocket = connectionSocket;
     }
     @Override
     public void run() {
