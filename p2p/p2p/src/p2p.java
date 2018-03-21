@@ -7,8 +7,10 @@ public class p2p {
     public static final int START_PORT = 50600;
     public static final int END_PORT = 50619;
     public static int localPort;
+    public static String localAddress;
 
     private static Thread serverThread;
+    private static Peer peer;
     private static ServerRunnable serverRunnable;
     private static boolean running = true;
     private static String fileName;
@@ -21,8 +23,14 @@ public class p2p {
         System.out.println("Starting up peer...");
         //addressList = fillAddresses("config_neighbors.txt");
         //System.out.println(addressList.toString());
-        localPort = getLocalPort("config_local_port.txt");
-        serverRunnable = new ServerRunnable(localPort);
+        localPort = getLocalPort("config_local.txt");
+        localAddress = getLocalAddress("config_local.txt");
+        if(localPort==-1 || localAddress.equals("")){
+            System.out.println("Invalid local config file");
+            return;
+        }
+        peer = new Peer(localAddress,localPort, true);
+        serverRunnable = new ServerRunnable(peer, localPort);
         serverThread = (new Thread(serverRunnable));
         serverThread.start();
         while(running){
@@ -56,12 +64,28 @@ public class p2p {
     public static int getLocalPort(String file){
         File addressFile = new File (file);
         Scanner scanner = null;
+        String line;
         try {
             scanner = new Scanner(addressFile);
+            line = scanner.nextLine();
+            return Integer.parseInt(line.substring(line.indexOf(':')+1));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        return Integer.parseInt(scanner.nextLine());
+        return -1;
+    }
+    public static String getLocalAddress(String file){
+        File addressFile = new File (file);
+        Scanner scanner = null;
+        String line;
+        try {
+            scanner = new Scanner(addressFile);
+            line = scanner.nextLine();
+            return line.substring(0,line.indexOf(':'));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     public static Socket getSocketFromConfig(String line) throws IOException {
@@ -81,22 +105,24 @@ public class p2p {
                 break;
             case ("exit"): exitNetwork();
                 break;
-            default: runFileQuery(command);
-                break;
+            default:
+                if(command.substring(0,3).equals("get")) {
+                    runFileQuery(command);
+                    break;
+                }
+                else{
+                    System.out.println("Command not recognized");
+                }
         }
     }
 
     public static void runFileQuery(String command){
         if (command.substring(0,3).equals("get")){
             fileName = command.substring(4);
-            for(Socket socket:peerConnections){
-                String queryResponse = queryPeer(fileName,socket);
-                if (queryResponse.equals("File not found")){
-                    System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file "+ fileName);
-                }
-                else{
-                    downloadFile(fileName,getAddressFromResponse(queryResponse.substring(2)),END_PORT);
-                }
+            String response = peer.queryNeighbors(fileName);
+            if(response.charAt(0)=='R'){
+                System.out.println("Downloading from p2p");
+                peer.downloadFile(fileName,peer.getAddressFromResponse(response),END_PORT);
             }
         }
         else{
@@ -104,21 +130,13 @@ public class p2p {
         }
     }
 
-    public static String getAddressFromResponse(String response){
-        return response.substring(response.indexOf(';')+1,response.indexOf(':'));
-    }
-    public static int getPortFromResponse(String response){
-        return Integer.parseInt(response.substring(response.indexOf(':')+1));
-    }
-
-    public static void downloadFile(String fileName, String address, int port){
-        new Thread(new DownloadRunnable(fileName, address,port)).start();
-    }
 
     public static void connectToPeers(){
-        peerConnections = fillAddresses("config_neighbors.txt");
-        serverRunnable.setNeighbors(peerConnections);
-        serverConnections.add(serverRunnable);
+        try {
+            peer.makeConnections();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void disconnectFromPeers(){
@@ -132,21 +150,5 @@ public class p2p {
         System.out.println("Exiting...");
     }
 
-    public static String queryPeer(String fileName, Socket socket){
-        int qId = (int)(Math.random() * 10000);
-        PrintWriter outToClient;
-        try {
-            outToClient = new PrintWriter(socket.getOutputStream(),true);
-            String queryMessage = "Q:" + qId + ";" + fileName;
-            System.out.println("Sending query for " + fileName + " to " + socket.getInetAddress().toString());
-            outToClient.println(queryMessage);
-            BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream())); //peer will query its neighbors if it does not have the file
-            String clientResponse = inFromClient.readLine();
-            System.out.println(clientResponse);
-            return clientResponse;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "File not found";
-    }
+
 }

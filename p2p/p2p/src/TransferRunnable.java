@@ -28,17 +28,25 @@ public class TransferRunnable implements Runnable {
             System.out.println(request);
             File myFile = new File("shared/"+this.getFileName());
             while (!sock.isClosed()) {
+                System.out.println("Transferring file...");
                 byte[] mybytearray = new byte[(int) myFile.length()];
                 BufferedInputStream bis = new BufferedInputStream(new FileInputStream(myFile));
                 bis.read(mybytearray, 0, mybytearray.length);
                 OutputStream os = sock.getOutputStream();
                 os.write(mybytearray, 0, mybytearray.length);
                 os.flush();
+                os.close();
                 sock.close();
             }
             System.out.println("File transferred");
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                servsock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

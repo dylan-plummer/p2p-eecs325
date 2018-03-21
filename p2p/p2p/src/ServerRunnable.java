@@ -8,10 +8,12 @@ import java.util.ArrayList;
  */
 public class ServerRunnable implements Runnable {
     private static boolean serverRunning = true;
+    private boolean queryNeighbors = true;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
     private BufferedReader inFromClient;
     private PrintWriter outToClient;
+    private Peer peer;
     private int port;
     private ArrayList<Socket> neighbors;
 
@@ -23,40 +25,23 @@ public class ServerRunnable implements Runnable {
         this.port = port;
         this.neighbors = neighbors;
     }
+
+    public ServerRunnable(Peer peer, int port) {
+        this.peer = peer;
+        this.port = port;
+    }
+
     @Override
     public void run() {
         try {
-            serverSocket = new ServerSocket(port);
+            ServerSocket serverSocket = new ServerSocket(this.getPort());
             while(serverRunning){
                 Socket connectionSocket = serverSocket.accept();
                 System.out.println("Connection from: " + connectionSocket.getInetAddress().toString());
-                BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-                PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(),true);
-                String clientQuery = inFromClient.readLine();
-                String fileName = getFileName(clientQuery);
-                System.out.println(clientQuery);
-                if (new File("shared", fileName).exists()) {
-                    new Thread(new TransferRunnable(fileName, connectionSocket.getInetAddress().getHostAddress(),p2p.END_PORT)).start();
-                    String response = "R:" +
-                            getQueryId(clientQuery) +
-                            ";" +
-                            connectionSocket.getLocalAddress().getHostAddress() +
-                            ":" +
-                            connectionSocket.getLocalPort();
-                    outToClient.println(response);
-                }
-                else{
-                    for(Socket socket:neighbors){
-                        String queryResponse = p2p.queryPeer(fileName,socket);
-                        if (queryResponse.equals("File not found")){
-                            System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file "+ fileName);
-                        }
-                        else{
-                            outToClient.println(queryResponse);
-                        }
-
-                    }
-                }
+                peer.setConnectionSocket(connectionSocket);
+                ClientRunnable clientRunnable = new ClientRunnable(peer);
+                //clientRunnable.setNeighbors(neighbors);
+                new Thread(clientRunnable).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -71,12 +56,6 @@ public class ServerRunnable implements Runnable {
             }
         }
     }
-    public static String getQueryId(String query){
-        return query.substring(2,query.indexOf(';'));
-    }
-    public static String getFileName(String query){
-        return query.substring(query.indexOf(';')+1);
-    }
     public static void closeConnection(){
         serverRunning = false;
         //connectionSocket.close();
@@ -89,6 +68,14 @@ public class ServerRunnable implements Runnable {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public Peer getPeer() {
+        return peer;
+    }
+
+    public void setPeer(Peer peer) {
+        this.peer = peer;
     }
 
     public ArrayList<Socket> getNeighbors() {

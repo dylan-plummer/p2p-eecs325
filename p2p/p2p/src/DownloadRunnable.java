@@ -9,26 +9,24 @@ public class DownloadRunnable implements Runnable{
 
     private String fileName;
     private String address;
+    private Peer peer;
     private int port;
-
-    private static boolean serverRunning = true;
-    private static boolean initConnection = true;
-    private static ServerSocket serverSocket;
-    private Socket connectionSocket;
-    private BufferedReader inFromClient;
-    private PrintWriter outToClient;
 
     public DownloadRunnable(String fileName, String address, int port){
         this.fileName = fileName;
         this.address = address;
         this.port = port;
     }
+    public DownloadRunnable(String fileName, Peer peer){
+        this.fileName = fileName;
+        this.peer = peer;
+    }
 
     @Override
     public void run() {
         try {
-            System.out.println(address);
-            Socket downloadSocket = new Socket(address, p2p.END_PORT);
+            //System.out.println(address);
+            Socket downloadSocket = new Socket(address, port);
             PrintWriter outToClient;
             outToClient = new PrintWriter(downloadSocket.getOutputStream(),true);
             String queryMessage = "T:" + fileName;
@@ -42,7 +40,10 @@ public class DownloadRunnable implements Runnable{
             while ((count = is.read(buffer)) > 0) {
                 bos.write(buffer, 0, count);
             }
+            bos.flush();
             bos.close();
+            fos.flush();
+            fos.close();
             downloadSocket.close();
             System.out.println("File downloaded");
         } catch (IOException e) {
