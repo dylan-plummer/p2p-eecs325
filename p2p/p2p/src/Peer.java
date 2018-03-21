@@ -23,10 +23,6 @@ public class Peer {
             neighbors = fillNeighbors("config_neighbors.txt");
         }
     }
-    public Peer(int port){
-        this.port = port;
-        this.neighbors = fillNeighbors("config_neighbors.txt");
-    }
 
     public static ArrayList<Peer> fillNeighbors(String file){
         ArrayList<Peer> addressList = new ArrayList<Peer>();
@@ -59,24 +55,6 @@ public class Peer {
         return connections;
     }
 
-    public void checkForFileAndDownload(String fileName){
-        if(this.getConnections()!=null) {
-            System.out.println("Checking for "+ fileName);
-            for (Socket socket : this.getConnections()) {
-                String queryResponse = queryPeer(fileName, socket);
-                if (queryResponse == null) {
-                    System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
-                } else if (queryResponse.equals("File not found")) {
-                    System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
-                } else if(queryResponse.equals("Peer already queried")){
-                    System.out.println("Peer " + socket.getInetAddress().toString()+ " already queried");
-                } else {
-                    System.out.println("Response::: "+queryResponse);
-                    downloadFile(fileName, getAddressFromResponse(queryResponse), p2p.END_PORT);
-                }
-            }
-        }
-    }
     public String queryNeighbors(String fileName){
         if(this.getConnections()!=null) {
             System.out.println("Checking for "+ fileName);
@@ -89,7 +67,6 @@ public class Peer {
                 } else if(queryResponse.equals("Peer already queried")){
                     System.out.println("Peer " + socket.getInetAddress().toString()+ " already queried");
                 } else {
-                    //System.out.println("Response::: "+queryResponse);
                     return queryResponse;
                 }
             }
@@ -125,8 +102,6 @@ public class Peer {
                 String clientResponse = inFromClient.readLine();
                 System.out.println(clientResponse);
                 outToClient.flush();
-                //outToClient.close();
-                //inFromClient.close();
                 return clientResponse;
             } catch (IOException e) {
                 e.printStackTrace();

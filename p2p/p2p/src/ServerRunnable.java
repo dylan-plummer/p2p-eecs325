@@ -8,23 +8,12 @@ import java.util.ArrayList;
  */
 public class ServerRunnable implements Runnable {
     private static boolean serverRunning = true;
-    private boolean queryNeighbors = true;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
-    private BufferedReader inFromClient;
-    private PrintWriter outToClient;
     private Peer peer;
     private int port;
     private ArrayList<Socket> neighbors;
 
-    public ServerRunnable(int port){
-        this.port = port;
-        this.neighbors = new ArrayList<>();
-    }
-    public ServerRunnable(int port, ArrayList<Socket> neighbors){
-        this.port = port;
-        this.neighbors = neighbors;
-    }
 
     public ServerRunnable(Peer peer, int port) {
         this.peer = peer;
@@ -34,13 +23,12 @@ public class ServerRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(this.getPort());
+            serverSocket = new ServerSocket(this.getPort());
             while(serverRunning){
-                Socket connectionSocket = serverSocket.accept();
+                connectionSocket = serverSocket.accept();
                 System.out.println("Connection from: " + connectionSocket.getInetAddress().toString());
                 peer.setConnectionSocket(connectionSocket);
                 ClientRunnable clientRunnable = new ClientRunnable(peer);
-                //clientRunnable.setNeighbors(neighbors);
                 new Thread(clientRunnable).start();
             }
         } catch (IOException e) {
@@ -50,8 +38,6 @@ public class ServerRunnable implements Runnable {
                 System.out.println("Closing server and connection sockets");
                 serverSocket.close();
                 connectionSocket.close();
-                inFromClient.close();
-                outToClient.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -59,8 +45,6 @@ public class ServerRunnable implements Runnable {
     }
     public static void closeConnection(){
         serverRunning = false;
-        //connectionSocket.close();
-        //serverSocket.close();
     }
 
     public int getPort() {
