@@ -21,6 +21,7 @@ public class HeartbeatServerRunnable implements Runnable {
     public void run() {
         try {
             serverSocket = new ServerSocket(this.getPort());
+            //System.out.println("Starting heartbeat server on port "+ port);
             while(serverRunning){
                 connectionSocket = serverSocket.accept();
                 System.out.println("Heartbeat from: " + connectionSocket.getInetAddress().toString());

@@ -18,10 +18,10 @@ public class TransferRunnable implements Runnable {
     @Override
     public void run() {
         ServerSocket servsock = null;
-        System.out.println("Transfer to " + this.getAddress());
         try {
             servsock = new ServerSocket(this.getPort());
             Socket sock = servsock.accept();
+            System.out.println("Transfer to " + sock.getInetAddress().getHostAddress() + " on port "+ this.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String request = inFromClient.readLine();
             this.setFileName(request.substring(request.indexOf(':')+1));

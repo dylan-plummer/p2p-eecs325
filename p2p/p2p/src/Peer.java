@@ -50,32 +50,39 @@ public class Peer {
     public ArrayList<Socket> makeConnections() throws IOException {
         connections = new ArrayList<>();
         for(Peer neighbor:neighbors){
-            Socket socket = new Socket();
-            socket.connect(new InetSocketAddress(neighbor.getAddress(), neighbor.getPort()), p2p.TIMEOUT);
+            System.out.println("Connecting to "+neighbor.getAddress());
+            Socket socket = new Socket(neighbor.getAddress(),neighbor.getPort());
+            socket.setSoTimeout(p2p.TIMEOUT);
+            System.out.println("Connection to " + neighbor.getAddress() + " successful");
+            //socket.connect(new InetSocketAddress(neighbor.getAddress(), neighbor.getPort()), p2p.TIMEOUT);
             connections.add(socket);
         }
         for(Socket socket:connections){
-            HeartbeatServerRunnable heartbeatServerRunnable = new HeartbeatServerRunnable(this,p2p.HEARTBEAT_PORT);
-            new Thread(heartbeatServerRunnable).start();
             HeartbeatRunnable heartbeatRunnable = new HeartbeatRunnable(socket.getInetAddress().getHostAddress(),p2p.HEARTBEAT_PORT);
+            System.out.println("Starting heartbeat on "+ socket.getInetAddress().getHostAddress()+ " and "+this.getAddress());
             new Thread(heartbeatRunnable).start();
         }
         return connections;
     }
 
-    public String queryNeighbors(String fileName){
+    public String queryNeighbors(String fileName, String address){
         if(this.getConnections()!=null) {
             System.out.println("Checking for "+ fileName);
             for (Socket socket : this.getConnections()) {
-                String queryResponse = queryPeer(fileName, socket);
-                if (queryResponse == null) {
-                    System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
-                } else if (queryResponse.equals("File not found")) {
-                    System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
-                } else if(queryResponse.equals("Peer already queried")){
-                    System.out.println("Peer " + socket.getInetAddress().toString()+ " already queried");
-                } else {
-                    return queryResponse;
+                if(socket.getInetAddress().getHostAddress().equals(address)){
+                    System.out.println("Don't query original sender");
+                }
+                else {
+                    String queryResponse = queryPeer(fileName, socket);
+                    if (queryResponse == null) {
+                        System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
+                    } else if (queryResponse.equals("File not found")) {
+                        System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
+                    } else if (queryResponse.equals("Peer already queried")) {
+                        System.out.println("Peer " + socket.getInetAddress().toString() + " already queried");
+                    } else {
+                        return queryResponse;
+                    }
                 }
             }
         }
@@ -109,7 +116,7 @@ public class Peer {
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream())); //peer will query its neighbors if it does not have the file
                 String clientResponse = inFromClient.readLine();
                 System.out.println(clientResponse);
-                outToClient.flush();
+                //outToClient.flush();
                 return clientResponse;
             } catch (IOException e) {
                 e.printStackTrace();

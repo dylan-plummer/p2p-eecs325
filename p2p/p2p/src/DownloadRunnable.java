@@ -25,7 +25,7 @@ public class DownloadRunnable implements Runnable{
     @Override
     public void run() {
         try {
-            //System.out.println(address);
+            System.out.println("Download thread for "+ address + ":"+ port);
             Socket downloadSocket = new Socket(address, port);
             PrintWriter outToClient;
             outToClient = new PrintWriter(downloadSocket.getOutputStream(),true);

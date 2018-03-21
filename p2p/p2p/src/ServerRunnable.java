@@ -24,6 +24,7 @@ public class ServerRunnable implements Runnable {
     public void run() {
         try {
             serverSocket = new ServerSocket(this.getPort());
+            serverSocket.setSoTimeout(p2p.TIMEOUT);
             while(serverRunning){
                 connectionSocket = serverSocket.accept();
                 activeConnections.add(connectionSocket);
@@ -32,7 +33,7 @@ public class ServerRunnable implements Runnable {
                 new Thread(clientRunnable).start();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Connection timed out.");
         } finally {
             try {
                 System.out.println("Closing server and connection sockets");

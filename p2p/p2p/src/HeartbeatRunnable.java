@@ -21,7 +21,7 @@ public class HeartbeatRunnable implements Runnable {
     public void run() {
         try {
             while(true) {
-                Socket heartbeatSocket = new Socket(address, p2p.HEARTBEAT_PORT);
+                Socket heartbeatSocket = new Socket(address, port);
                 PrintWriter outToClient;
                 outToClient = new PrintWriter(heartbeatSocket.getOutputStream(), true);
                 String queryMessage = "Hello " + heartbeatSocket.getInetAddress().getHostName();
@@ -31,13 +31,10 @@ public class HeartbeatRunnable implements Runnable {
                 TimeUnit.SECONDS.sleep(p2p.HEARTBEAT_DELAY);
             }
         } catch (UnknownHostException e) {
-            System.out.println(address + "'s heart has stopped beating! 1");
             e.printStackTrace();
         } catch (IOException e) {
             System.out.println(address + "'s heart has stopped beating! 2");
-            e.printStackTrace();
         } catch (InterruptedException e) {
-            System.out.println(address + "'s heart has stopped beating! 3");
             e.printStackTrace();
         }
     }

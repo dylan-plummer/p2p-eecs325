@@ -13,6 +13,8 @@ public class ClientRunnable implements Runnable {
         this.peer = peer;
         this.connectionSocket = connectionSocket;
     }
+
+
     @Override
     public void run() {
         try {
@@ -33,17 +35,23 @@ public class ClientRunnable implements Runnable {
                                 connectionSocket.getLocalPort();
                         outToClient.println(response);
                     } else if (message.charAt(0) == 'R') {
-                        peer.downloadFile(fileName, peer.getAddressFromResponse(message), peer.getPortFromResponse(message));
+                        peer.downloadFile(fileName, peer.getAddressFromResponse(message), p2p.TRANSFER_PORT);
                     } else {
-                        System.out.println("File not found on " + connectionSocket.getInetAddress().getHostName());
+                        System.out.println("File not found on " + connectionSocket.getInetAddress().getHostName() + "querying neighbors");
                         if (peer.getNeighbors() != null) {
                             System.out.println(peer.getNeighbors().toString());
-                            String response = peer.queryNeighbors(fileName);
+                            String response = peer.queryNeighbors(fileName, connectionSocket.getInetAddress().getHostAddress());
                             if (!response.equals("")) {
                                 outToClient.println(response);
                             }
+                            else{
+                                outToClient.println("File not found");
+                            }
                         }
                     }
+                }
+                else{
+                    outToClient.println("File not found");
                 }
             }
 

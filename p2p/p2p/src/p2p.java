@@ -28,6 +28,8 @@ public class p2p {
             serverRunnable = new ServerRunnable(peer, localPort);
             serverThread = (new Thread(serverRunnable));
             serverThread.start();
+            HeartbeatServerRunnable heartbeatServerRunnable = new HeartbeatServerRunnable(peer,p2p.HEARTBEAT_PORT);
+            new Thread(heartbeatServerRunnable).start();
             while (running) {
                 System.out.println("Waiting for command: ");
                 runCommand(getCommand()); //run user input
@@ -89,9 +91,12 @@ public class p2p {
     public static void runFileQuery(String command){
         if (command.substring(0,3).equals("get")){
             fileName = command.substring(4);
-            String response = peer.queryNeighbors(fileName);
-            if(response.charAt(0)=='R'){
+            String response = peer.queryNeighbors(fileName,peer.getAddress());
+            if(response.length()>0 && response.charAt(0)=='R'){
                 peer.downloadFile(fileName,peer.getAddressFromResponse(response), TRANSFER_PORT);
+            }
+            else{
+                System.out.println("Message: "+ response);
             }
         }
         else{
