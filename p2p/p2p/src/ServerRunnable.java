@@ -47,6 +47,7 @@ public class ServerRunnable implements Runnable {
             e.printStackTrace();
         } finally {
             try {
+                System.out.println("Closing server and connection sockets");
                 serverSocket.close();
                 connectionSocket.close();
                 inFromClient.close();

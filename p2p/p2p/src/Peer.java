@@ -125,8 +125,8 @@ public class Peer {
                 String clientResponse = inFromClient.readLine();
                 System.out.println(clientResponse);
                 outToClient.flush();
-                outToClient.close();
-                inFromClient.close();
+                //outToClient.close();
+                //inFromClient.close();
                 return clientResponse;
             } catch (IOException e) {
                 e.printStackTrace();

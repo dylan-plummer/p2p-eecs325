@@ -31,24 +31,24 @@ public class ClientRunnable implements Runnable {
             while(connected) {
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
                 PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(), true);
-                String clientQuery = inFromClient.readLine();
-                if(clientQuery!=null) {
-                    String fileName = getFileName(clientQuery);
-                    if(clientQuery.charAt(0) == 'Q' && new File("shared", fileName).exists()) {
+                String message = inFromClient.readLine();
+                if(message!=null) {
+                    String fileName = getFileName(message);
+                    if(message.charAt(0) == 'Q' && new File("shared", fileName).exists()) {
                         System.out.println("Starting transfer thread to "+ peer.getAddress());
                         new Thread(new TransferRunnable(fileName, peer.getAddress(), p2p.END_PORT)).start();
-                        System.out.println(clientQuery);
+                        System.out.println(message);
                         String response = "R:" +
-                                getQueryId(clientQuery) +
+                                getQueryId(message) +
                                 ";" +
                                 connectionSocket.getLocalAddress().getHostAddress() +
                                 ":" +
                                 connectionSocket.getLocalPort();
                         outToClient.println(response);
-                    } else if (clientQuery.charAt(0) == 'R') {
+                    } else if (message.charAt(0) == 'R') {
                         System.out.println("Downloading from Client Thread");
-                        peer.downloadFile(fileName, peer.getAddressFromResponse(clientQuery), peer.getPortFromResponse(clientQuery));
-                    } else if (clientQuery.charAt(0) == 'T') {
+                        peer.downloadFile(fileName, peer.getAddressFromResponse(message), peer.getPortFromResponse(message));
+                    } else if (message.charAt(0) == 'T') {
                         System.out.println("transfer");
                     }
                     else {
@@ -57,7 +57,6 @@ public class ClientRunnable implements Runnable {
                             System.out.println(peer.getNeighbors().toString());
                             String response = peer.queryNeighbors(fileName);
                             if (!response.equals("")) {
-                                //peer.downloadFile(fileName,peer.getAddressFromResponse(response),peer.getPortFromResponse(response));
                                 outToClient.println(response);
                             }
                         }
