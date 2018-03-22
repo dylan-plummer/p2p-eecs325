@@ -30,10 +30,10 @@ public class ServerRunnable implements Runnable {
                 activeConnections.add(connectionSocket);
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
                 String message = inFromClient.readLine();
-                if(message.charAt(0)=='H') {
-                    System.out.println("Heartbeat from " + connectionSocket.getInetAddress().toString());
+                if(message.charAt(0)=='H') { //heartbeat message
+                    System.out.println("Heartbeat from " + connectionSocket.getInetAddress().getHostName());
                 }
-                else{
+                else{ //new connection
                     System.out.println(message);
                     ClientRunnable clientRunnable = new ClientRunnable(peer, connectionSocket);
                     new Thread(clientRunnable).start();

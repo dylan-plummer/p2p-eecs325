@@ -5,8 +5,8 @@ import java.util.Scanner;
 
 public class p2p {
     public static final int TRANSFER_PORT = 50619;
-    public static final int TIMEOUT = 30000; //timeout for listening socket, 30s
-    public static final int HEARTBEAT_DELAY = 10000; //heartbeat interval, 10s
+    public static final int TIMEOUT = 60000; //timeout for listening socket, 60s
+    public static final int HEARTBEAT_DELAY = 30000; //heartbeat interval, 30s
     public static int localPort;
     public static String localAddress;
     public static boolean running = true;
@@ -94,9 +94,6 @@ public class p2p {
             if(response.length()>0 && response.charAt(0)=='R'){
                 peer.downloadFile(fileName,peer.getAddressFromResponse(response), TRANSFER_PORT);
             }
-            else{
-                System.out.println("Message: "+ response);
-            }
         }
         else{
             System.out.println("Command not recognized");
@@ -117,17 +114,15 @@ public class p2p {
 
     public static void disconnectFromPeers(){
         System.out.println("Disconnecting...");
-        serverRunnable.closeConnection();
         try {
-
+            serverThread.interrupt();
+            serverThread.join();
             for(Thread thread:heartbeatThreads){
                 thread.interrupt();
                 thread.join();
             }
 
             heartbeatThreads.clear();
-            serverThread.interrupt();
-            serverThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -135,8 +130,7 @@ public class p2p {
 
     public static void exitNetwork(){
         System.out.println("Exiting...");
-        running = false;
-        disconnectFromPeers();
+        serverRunnable.closeConnection();
         System.exit(0);
     }
 

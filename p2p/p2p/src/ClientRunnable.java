@@ -47,6 +47,8 @@ public class ClientRunnable implements Runnable {
                             else{
                                 outToClient.println("File not found");
                             }
+                        } else{
+                            outToClient.println("File not found");
                         }
                     }
                 }
