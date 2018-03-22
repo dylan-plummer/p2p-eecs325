@@ -40,20 +40,33 @@ public class ServerRunnable implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Connection timed out. No peers connected.");
-        } finally {
+            System.out.println("Closing connections...");
             try {
-                System.out.println("Closing connections...");
-                serverSocket.close();
-                connectionSocket.close();
+                if(serverSocket !=null && connectionSocket !=null) {
+                    serverSocket.close();
+                    connectionSocket.close();
+                }
                 return;
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
             }
         }
     }
-    public static void closeConnection(){
+    public void closeConnection(){
         serverRunning = false;
+        try {
+            if(serverSocket !=null && connectionSocket !=null) {
+                System.out.println("Closing peer connections...");
+                serverSocket.close();
+                connectionSocket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void openConnection(){
+        serverRunning = true;
     }
 
     public int getPort() {

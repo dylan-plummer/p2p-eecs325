@@ -58,7 +58,7 @@ public class ClientRunnable implements Runnable {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Closing heartbeat threads...");
         } finally {
             try {
                 connectionSocket.close();

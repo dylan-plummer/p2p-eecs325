@@ -6,7 +6,7 @@ import java.util.Scanner;
 public class p2p {
     public static final int TRANSFER_PORT = 50619;
     public static final int TIMEOUT = 60000; //timeout for listening socket, 60s
-    public static final int HEARTBEAT_DELAY = 30000; //heartbeat interval, 30s
+    public static final long HEARTBEAT_DELAY = 30000; //heartbeat interval, 30s
     public static int localPort;
     public static String localAddress;
     public static boolean running = true;
@@ -15,7 +15,7 @@ public class p2p {
     private static Peer peer;
     private static ServerRunnable serverRunnable;
     private static String fileName;
-    private static ArrayList<Thread> heartbeatThreads;
+    private static ArrayList<HeartbeatRunnable> heartbeatThreads;
 
     public static void main(String[] args){
         System.out.println("Starting up peer...");
@@ -29,10 +29,7 @@ public class p2p {
             serverRunnable = new ServerRunnable(peer, localPort);
             serverThread = (new Thread(serverRunnable));
             serverThread.start();
-            while (running) {
-                System.out.println("Waiting for command: ");
-                runCommand(getCommand()); //run user input
-            }
+            waitForCommand();
         }
     }
 
@@ -70,7 +67,17 @@ public class p2p {
 
     public static void runCommand(String command){
         switch (command){
-            case ("connect"): connectToPeers();
+            case ("connect"):
+                if(!serverThread.isAlive()) {
+                    for(HeartbeatRunnable heartbeat:heartbeatThreads){
+                        heartbeat.connect();
+                    }
+                    serverRunnable = new ServerRunnable(peer, localPort);
+                    serverRunnable.openConnection();
+                    serverThread = (new Thread(serverRunnable));
+                    serverThread.start();
+                }
+                connectToPeers();
                 break;
             case ("leave"): disconnectFromPeers();
                 break;
@@ -107,29 +114,36 @@ public class p2p {
         for(Socket socket:peer.getConnections()){
             HeartbeatRunnable heartbeatRunnable = new HeartbeatRunnable(socket.getInetAddress().getHostAddress(),socket.getPort());
             Thread heartbeatThread =  new Thread(heartbeatRunnable);
-            heartbeatThreads.add(heartbeatThread);
+            heartbeatThreads.add(heartbeatRunnable);
             heartbeatThread.start();
         }
     }
 
-    public static void disconnectFromPeers(){
+    public static void disconnectFromPeers() {
+        running = false;
         System.out.println("Disconnecting...");
-        try {
-            serverThread.interrupt();
-            serverThread.join();
-            for(Thread thread:heartbeatThreads){
-                thread.interrupt();
-                thread.join();
+        for (HeartbeatRunnable heartbeat : heartbeatThreads) {
+            heartbeat.disconnect();
+            synchronized (heartbeat) {
+                heartbeat.notifyAll();
             }
+        }
+        serverRunnable.closeConnection();
+        System.out.println("Disconnected");
+        waitForCommand();
+    }
 
-            heartbeatThreads.clear();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    public static void waitForCommand(){
+        running = true;
+        while (running) {
+            System.out.println("Waiting for command: ");
+            runCommand(getCommand()); //run user input
         }
     }
 
     public static void exitNetwork(){
         System.out.println("Exiting...");
+        running = false;
         serverRunnable.closeConnection();
         System.exit(0);
     }
