@@ -18,7 +18,7 @@ public class ClientRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            while(connected) {
+            while(p2p.running) {
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
                 PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(), true);
                 String message = inFromClient.readLine();
@@ -57,6 +57,12 @@ public class ClientRunnable implements Runnable {
 
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                connectionSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }

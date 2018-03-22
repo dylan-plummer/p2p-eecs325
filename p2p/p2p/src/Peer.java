@@ -47,20 +47,21 @@ public class Peer {
         return Integer.parseInt(line.substring(line.indexOf(':')+1));
     }
 
-    public ArrayList<Socket> makeConnections() throws IOException {
+    public ArrayList<Socket> makeConnections() {
         connections = new ArrayList<>();
         for(Peer neighbor:neighbors){
             System.out.println("Connecting to "+neighbor.getAddress());
-            Socket socket = new Socket(neighbor.getAddress(),neighbor.getPort());
-            socket.setSoTimeout(p2p.TIMEOUT);
-            System.out.println("Connection to " + neighbor.getAddress() + " successful");
-            //socket.connect(new InetSocketAddress(neighbor.getAddress(), neighbor.getPort()), p2p.TIMEOUT);
-            connections.add(socket);
-        }
-        for(Socket socket:connections){
-            HeartbeatRunnable heartbeatRunnable = new HeartbeatRunnable(socket.getInetAddress().getHostAddress(),p2p.HEARTBEAT_PORT);
-            System.out.println("Starting heartbeat on "+ socket.getInetAddress().getHostAddress()+ " and "+this.getAddress());
-            new Thread(heartbeatRunnable).start();
+            Socket socket = null;
+            try {
+                socket = new Socket(neighbor.getAddress(),neighbor.getPort());
+                socket.setSoTimeout(p2p.TIMEOUT);
+                System.out.println("Connection to " + neighbor.getAddress() + " successful");
+                PrintWriter outToClient = new PrintWriter(socket.getOutputStream(), true);
+                outToClient.println("Connection from "+ neighbor.getAddress());
+                connections.add(socket);
+            } catch (IOException e) {
+                System.out.println("Failed to connect to "+neighbor.getAddress() + ".  Are you sure they are online?");
+            }
         }
         return connections;
     }

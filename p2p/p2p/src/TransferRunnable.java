@@ -44,6 +44,7 @@ public class TransferRunnable implements Runnable {
         } finally {
             try {
                 servsock.close();
+                return;
             } catch (IOException e) {
                 e.printStackTrace();
             }

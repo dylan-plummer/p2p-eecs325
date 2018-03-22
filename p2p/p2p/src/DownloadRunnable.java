@@ -46,6 +46,7 @@ public class DownloadRunnable implements Runnable{
             fos.close();
             downloadSocket.close();
             System.out.println("File downloaded");
+            return;
         } catch (IOException e) {
             e.printStackTrace();
         }

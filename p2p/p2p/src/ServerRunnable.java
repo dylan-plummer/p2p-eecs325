@@ -28,17 +28,25 @@ public class ServerRunnable implements Runnable {
             while(serverRunning){
                 connectionSocket = serverSocket.accept();
                 activeConnections.add(connectionSocket);
-                System.out.println("Connection from: " + connectionSocket.getInetAddress().toString());
-                ClientRunnable clientRunnable = new ClientRunnable(peer,connectionSocket);
-                new Thread(clientRunnable).start();
+                BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                String message = inFromClient.readLine();
+                if(message.charAt(0)=='H') {
+                    System.out.println("Heartbeat from " + connectionSocket.getInetAddress().toString());
+                }
+                else{
+                    System.out.println(message);
+                    ClientRunnable clientRunnable = new ClientRunnable(peer, connectionSocket);
+                    new Thread(clientRunnable).start();
+                }
             }
         } catch (IOException e) {
-            System.out.println("Connection timed out.");
+            System.out.println("Connection timed out. No peers connected.");
         } finally {
             try {
-                System.out.println("Closing server and connection sockets");
+                System.out.println("Closing connections...");
                 serverSocket.close();
                 connectionSocket.close();
+                return;
             } catch (IOException e) {
                 e.printStackTrace();
             }

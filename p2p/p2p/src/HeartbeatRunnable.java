@@ -20,22 +20,26 @@ public class HeartbeatRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            while(true) {
+            Thread.sleep(p2p.HEARTBEAT_DELAY);
+            while(p2p.running) {
                 Socket heartbeatSocket = new Socket(address, port);
                 PrintWriter outToClient;
                 outToClient = new PrintWriter(heartbeatSocket.getOutputStream(), true);
-                String queryMessage = "Hello " + heartbeatSocket.getInetAddress().getHostName();
+                String queryMessage = "H: " + heartbeatSocket.getInetAddress().getHostName();
                 System.out.println("Sending heartbeat to " + heartbeatSocket.getInetAddress().getHostName());
                 outToClient.println(queryMessage);
                 heartbeatSocket.close();
-                TimeUnit.SECONDS.sleep(p2p.HEARTBEAT_DELAY);
+                Thread.sleep(p2p.HEARTBEAT_DELAY);
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
-            System.out.println(address + "'s heart has stopped beating! 2");
+            System.out.println(address + "'s heart has stopped beating.  Connection closed.");
+            return;
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            System.out.println("Interrupting heartbeat");
+            Thread.currentThread().interrupt();
+            return;
         }
     }
 

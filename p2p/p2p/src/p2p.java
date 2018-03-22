@@ -1,20 +1,21 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class p2p {
     public static final int TRANSFER_PORT = 50619;
-    public static final int HEARTBEAT_PORT = 50618;
-    public static final int TIMEOUT = 30000;
-    public static final int HEARTBEAT_DELAY = 20;
+    public static final int TIMEOUT = 30000; //timeout for listening socket, 30s
+    public static final int HEARTBEAT_DELAY = 10000; //heartbeat interval, 10s
     public static int localPort;
     public static String localAddress;
+    public static boolean running = true;
 
     private static Thread serverThread;
     private static Peer peer;
     private static ServerRunnable serverRunnable;
-    private static boolean running = true;
     private static String fileName;
+    private static ArrayList<Thread> heartbeatThreads;
 
     public static void main(String[] args){
         System.out.println("Starting up peer...");
@@ -28,8 +29,6 @@ public class p2p {
             serverRunnable = new ServerRunnable(peer, localPort);
             serverThread = (new Thread(serverRunnable));
             serverThread.start();
-            HeartbeatServerRunnable heartbeatServerRunnable = new HeartbeatServerRunnable(peer,p2p.HEARTBEAT_PORT);
-            new Thread(heartbeatServerRunnable).start();
             while (running) {
                 System.out.println("Waiting for command: ");
                 runCommand(getCommand()); //run user input
@@ -106,22 +105,39 @@ public class p2p {
 
 
     public static void connectToPeers(){
-        try {
-            peer.makeConnections();
-        } catch (IOException e) {
-            e.printStackTrace();
+        peer.makeConnections();
+        heartbeatThreads = new ArrayList<>();
+        for(Socket socket:peer.getConnections()){
+            HeartbeatRunnable heartbeatRunnable = new HeartbeatRunnable(socket.getInetAddress().getHostAddress(),socket.getPort());
+            Thread heartbeatThread =  new Thread(heartbeatRunnable);
+            heartbeatThreads.add(heartbeatThread);
+            heartbeatThread.start();
         }
     }
 
     public static void disconnectFromPeers(){
+        System.out.println("Disconnecting...");
         serverRunnable.closeConnection();
+        try {
+
+            for(Thread thread:heartbeatThreads){
+                thread.interrupt();
+                thread.join();
+            }
+
+            heartbeatThreads.clear();
+            serverThread.interrupt();
+            serverThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void exitNetwork(){
-        disconnectFromPeers();
-        running = false;
-        serverRunnable.closeConnection();
         System.out.println("Exiting...");
+        running = false;
+        disconnectFromPeers();
+        System.exit(0);
     }
 
 
