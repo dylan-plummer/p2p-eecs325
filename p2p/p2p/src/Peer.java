@@ -4,26 +4,22 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-/**
- * Created by jumpr on 3/19/2018.
- */
 public class Peer {
     private String address;
     private int port;
     private ArrayList<Peer> neighbors;
     private ArrayList<Socket> connections;
-    private boolean neighborsNeeded;
 
 
     public Peer(String address, int port, boolean neighborsNeeded) {
         this.address = address;
         this.port = port;
-        this.neighborsNeeded = neighborsNeeded;
         if(neighborsNeeded) {
             neighbors = fillNeighbors("_config_neighbors.txt");
         }
     }
 
+    //adds neighbors to list of peers
     public static ArrayList<Peer> fillNeighbors(String file){
         ArrayList<Peer> addressList = new ArrayList<Peer>();
         File addressFile = new File (file);
@@ -47,6 +43,7 @@ public class Peer {
         return Integer.parseInt(line.substring(line.indexOf(':')+1));
     }
 
+    //connects to all neighbors if possible
     public ArrayList<Socket> makeConnections() {
         connections = new ArrayList<>();
         for(Peer neighbor:neighbors){
@@ -66,6 +63,7 @@ public class Peer {
         return connections;
     }
 
+    //query all neighbors for a certain file
     public String queryNeighbors(String fileName, String address){
         if(this.getConnections()!=null) {
             System.out.println("Checking for "+ fileName);
@@ -77,9 +75,9 @@ public class Peer {
                     String queryResponse = queryPeer(fileName, socket);
                     if (queryResponse == null) {
                         System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
-                    } else if (queryResponse.equals("File not found")) {
+                    } else if (queryResponse.equals(p2p.FILE_NOT_FOUND)) {
                         System.out.println("Peer " + socket.getInetAddress().toString() + " does not have file " + fileName);
-                    } else if (queryResponse.equals("Peer already queried")) {
+                    } else if (queryResponse.equals(p2p.PEER_QUERIED)) {
                         System.out.println("Peer " + socket.getInetAddress().toString() + " already queried");
                     } else {
                         return queryResponse;
@@ -93,18 +91,16 @@ public class Peer {
         response = response.substring(2);
         return response.substring(response.indexOf(';')+1,response.indexOf(':'));
     }
-    public int getPortFromResponse(String response){
-        response = response.substring(2);
-        return Integer.parseInt(response.substring(response.indexOf(':')+1));
-    }
 
+    //start a new download thread to get the file
     public void downloadFile(String fileName, String address, int port){
         new Thread(new DownloadRunnable(fileName, address,port)).start();
     }
 
+    //query a specific peer for a file
     public static String queryPeer(String fileName, Socket socket){
         if(socket.isClosed()){
-            return "Peer already queried";
+            return p2p.PEER_QUERIED;
         }
         else {
             int qId = (int) (Math.random() * 10000);
@@ -114,15 +110,14 @@ public class Peer {
                 String queryMessage = "Q:" + qId + ";" + fileName;
                 System.out.println("Sending query for " + fileName + " to " + socket.getInetAddress().toString());
                 outToClient.println(queryMessage);
-                BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream())); //peer will query its neighbors if it does not have the file
+                BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String clientResponse = inFromClient.readLine();
                 System.out.println(clientResponse);
-                //outToClient.flush();
                 return clientResponse;
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return "File not found";
+            return p2p.FILE_NOT_FOUND;
         }
     }
 

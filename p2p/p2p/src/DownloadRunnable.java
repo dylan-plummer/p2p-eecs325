@@ -1,15 +1,10 @@
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
 
-/**
- * Created by jumpr on 3/15/2018.
- */
 public class DownloadRunnable implements Runnable{
 
     private String fileName;
     private String address;
-    private Peer peer;
     private int port;
 
     public DownloadRunnable(String fileName, String address, int port){
@@ -17,15 +12,10 @@ public class DownloadRunnable implements Runnable{
         this.address = address;
         this.port = port;
     }
-    public DownloadRunnable(String fileName, Peer peer){
-        this.fileName = fileName;
-        this.peer = peer;
-    }
 
     @Override
     public void run() {
         try {
-            System.out.println("Download thread for "+ address + ":"+ port);
             Socket downloadSocket = new Socket(address, port);
             PrintWriter outToClient;
             outToClient = new PrintWriter(downloadSocket.getOutputStream(),true);
@@ -50,29 +40,5 @@ public class DownloadRunnable implements Runnable{
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
     }
 }

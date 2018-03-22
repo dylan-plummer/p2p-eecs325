@@ -7,6 +7,9 @@ public class p2p {
     public static final int TRANSFER_PORT = 50619;
     public static final int TIMEOUT = 60000; //timeout for listening socket, 60s
     public static final long HEARTBEAT_DELAY = 30000; //heartbeat interval, 30s
+    public static final String UNKNOWN_COMMAND = "Command not recognized";
+    public static final String FILE_NOT_FOUND = "File not found";
+    public static final String PEER_QUERIED = "Peer already queried";
     public static int localPort;
     public static String localAddress;
     public static boolean running = true;
@@ -33,6 +36,7 @@ public class p2p {
         }
     }
 
+    //reads local port from config file
     public static int getLocalPort(String file){
         File addressFile = new File (file);
         Scanner scanner = null;
@@ -46,6 +50,8 @@ public class p2p {
         }
         return -1;
     }
+
+    //reads local address from config file
     public static String getLocalAddress(String file){
         File addressFile = new File (file);
         Scanner scanner = null;
@@ -60,11 +66,13 @@ public class p2p {
         return "";
     }
 
+    //gets  user input
     public static String getCommand() {
         Scanner scanner = new Scanner(System.in);
         return scanner.nextLine().toLowerCase();
     }
 
+    //runs user input
     public static void runCommand(String command){
         switch (command){
             case ("connect"):
@@ -89,25 +97,21 @@ public class p2p {
                     break;
                 }
                 else{
-                    System.out.println("Command not recognized");
+                    System.out.println(UNKNOWN_COMMAND);
                 }
         }
     }
 
+    //takes a 'get' command and sends a query for the file
     public static void runFileQuery(String command){
-        if (command.substring(0,3).equals("get")){
-            fileName = command.substring(4);
-            String response = peer.queryNeighbors(fileName,peer.getAddress());
-            if(response.length()>0 && response.charAt(0)=='R'){
-                peer.downloadFile(fileName,peer.getAddressFromResponse(response), TRANSFER_PORT);
-            }
-        }
-        else{
-            System.out.println("Command not recognized");
+        fileName = command.substring(4);
+        String response = peer.queryNeighbors(fileName,peer.getAddress());
+        if(response.length()>0 && response.charAt(0)=='R'){
+            peer.downloadFile(fileName,peer.getAddressFromResponse(response), TRANSFER_PORT);
         }
     }
 
-
+    //connect local peer to neighbors and begin heartbeat
     public static void connectToPeers(){
         peer.makeConnections();
         heartbeatThreads = new ArrayList<>();
@@ -119,6 +123,7 @@ public class p2p {
         }
     }
 
+    //disconnect from peers and stop heartbeats
     public static void disconnectFromPeers() {
         running = false;
         System.out.println("Disconnecting...");
@@ -133,14 +138,16 @@ public class p2p {
         waitForCommand();
     }
 
+    //waits for user to enter a command
     public static void waitForCommand(){
         running = true;
         while (running) {
             System.out.println("Waiting for command: ");
-            runCommand(getCommand()); //run user input
+            runCommand(getCommand());
         }
     }
 
+    //closes all connections and terminates
     public static void exitNetwork(){
         System.out.println("Exiting...");
         running = false;

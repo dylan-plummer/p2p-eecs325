@@ -2,9 +2,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-/**
- * Created by jumpr on 3/19/2018.
- */
 public class TransferRunnable implements Runnable {
     private String fileName;
     private String address;
@@ -15,6 +12,7 @@ public class TransferRunnable implements Runnable {
         this.address = address;
         this.port = port;
     }
+
     @Override
     public void run() {
         ServerSocket servsock = null;

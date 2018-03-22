@@ -1,13 +1,9 @@
 import java.io.*;
 import java.net.Socket;
 
-/**
- * Created by jumpr on 3/20/2018.
- */
 public class ClientRunnable implements Runnable {
     private Socket connectionSocket;
     private Peer peer;
-    private boolean connected = true;
 
     public ClientRunnable(Peer peer, Socket connectionSocket){
         this.peer = peer;
@@ -24,6 +20,7 @@ public class ClientRunnable implements Runnable {
                 String message = inFromClient.readLine();
                 if(message!=null) {
                     String fileName = getFileName(message);
+                    //if a peer is asking for a file that we have, respond with our address and port
                     if(message.charAt(0) == 'Q' && new File("shared", fileName).exists()) {
                         new Thread(new TransferRunnable(fileName, peer.getAddress(), p2p.TRANSFER_PORT)).start();
                         System.out.println(message);
@@ -34,10 +31,10 @@ public class ClientRunnable implements Runnable {
                                 ":" +
                                 connectionSocket.getLocalPort();
                         outToClient.println(response);
-                    } else if (message.charAt(0) == 'R') {
-                        peer.downloadFile(fileName, peer.getAddressFromResponse(message), p2p.TRANSFER_PORT);
-                    } else {
-                        System.out.println("File not found on " + connectionSocket.getInetAddress().getHostName() + "querying neighbors");
+                    }
+                    //otherwise, query our neighbors for the file and send back the response
+                    else {
+                        System.out.println("File not found on " + connectionSocket.getInetAddress().getHostName() + ". Querying neighbors");
                         if (peer.getNeighbors() != null) {
                             System.out.println(peer.getNeighbors().toString());
                             String response = peer.queryNeighbors(fileName, connectionSocket.getInetAddress().getHostAddress());
@@ -45,15 +42,15 @@ public class ClientRunnable implements Runnable {
                                 outToClient.println(response);
                             }
                             else{
-                                outToClient.println("File not found");
+                                outToClient.println(p2p.FILE_NOT_FOUND);
                             }
                         } else{
-                            outToClient.println("File not found");
+                            outToClient.println(p2p.FILE_NOT_FOUND);
                         }
                     }
                 }
                 else{
-                    outToClient.println("File not found");
+                    outToClient.println(p2p.FILE_NOT_FOUND);
                 }
             }
 
@@ -77,20 +74,5 @@ public class ClientRunnable implements Runnable {
         return query.substring(query.indexOf(';')+1);
     }
 
-    public Peer getPeer() {
-        return peer;
-    }
-
-    public void setPeer(Peer peer) {
-        this.peer = peer;
-    }
-
-    public Socket getSocket() {
-        return connectionSocket;
-    }
-
-    public void setSocket(Socket socket) {
-        this.connectionSocket = socket;
-    }
 
 }

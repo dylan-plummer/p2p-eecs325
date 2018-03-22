@@ -3,9 +3,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-/**
- * Created by jumpr on 3/15/2018.
- */
 public class ServerRunnable implements Runnable {
     private static boolean serverRunning = true;
     private ServerSocket serverSocket;
@@ -40,7 +37,6 @@ public class ServerRunnable implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Closing connections...");
             try {
                 if(serverSocket !=null && connectionSocket !=null) {
                     serverSocket.close();
